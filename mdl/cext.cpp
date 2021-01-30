@@ -193,19 +193,24 @@ namespace mdl {
             }
             PyModule_AddObject(module, "MyInt", reinterpret_cast<PyObject *>(&MyInt_Type));
 
-            void** PyCextAPI = static_cast<void**>(PyModule_GetState(module));
+            void** PyCextAPI = reinterpret_cast<void**>(PyMem_RawMalloc(static_cast<int>(API::API_NUM) * sizeof(void*)));
 
-            PyCextAPI[static_cast<int>(CextAPI::MyInt_add)] = reinterpret_cast<void*>(MyInt_add);
-            PyCextAPI[static_cast<int>(CextAPI::MyInt_int)] = reinterpret_cast<void*>(MyInt_int);
-            PyCextAPI[static_cast<int>(CextAPI::MyInt_getstate)] = reinterpret_cast<void*>(MyInt_getstate);
-            PyCextAPI[static_cast<int>(CextAPI::MyInt_setstate)] = reinterpret_cast<void*>(MyInt_setstate);
-            PyCextAPI[static_cast<int>(CextAPI::new_MyInt_Object)] = reinterpret_cast<void*>(new_MyInt_Object);
-            PyCextAPI[static_cast<int>(CextAPI::init_MyInt_Object)] = reinterpret_cast<void*>(init_MyInt_Object);
-            PyCextAPI[static_cast<int>(CextAPI::MyInt_dealloc)] = reinterpret_cast<void*>(MyInt_dealloc);
-            PyCextAPI[static_cast<int>(CextAPI::cext_refcnt)] = reinterpret_cast<void*>(cext_refcnt);
+            PyCextAPI[static_cast<int>(API::MyInt_add)] = reinterpret_cast<void*>(MyInt_add);
+            PyCextAPI[static_cast<int>(API::MyInt_int)] = reinterpret_cast<void*>(MyInt_int);
+            PyCextAPI[static_cast<int>(API::MyInt_getstate)] = reinterpret_cast<void*>(MyInt_getstate);
+            PyCextAPI[static_cast<int>(API::MyInt_setstate)] = reinterpret_cast<void*>(MyInt_setstate);
+            PyCextAPI[static_cast<int>(API::new_MyInt_Object)] = reinterpret_cast<void*>(new_MyInt_Object);
+            PyCextAPI[static_cast<int>(API::init_MyInt_Object)] = reinterpret_cast<void*>(init_MyInt_Object);
+            PyCextAPI[static_cast<int>(API::MyInt_dealloc)] = reinterpret_cast<void*>(MyInt_dealloc);
+            PyCextAPI[static_cast<int>(API::cext_refcnt)] = reinterpret_cast<void*>(cext_refcnt);
 
 
-            PyObject *c_api_object = PyCapsule_New(reinterpret_cast<void*>(PyCextAPI), "mdl.cext._C_API", nullptr);
+            PyObject *c_api_object = PyCapsule_New(reinterpret_cast<void*>(PyCextAPI),
+                "mdl.cext._C_API",
+                [](PyObject* capsule){
+                    void* ptr = PyCapsule_GetPointer(capsule, "mdl.cext._C_API");
+                    PyMem_RawFree(ptr);
+                });
             if (PyModule_AddObject(module, "_C_API", c_api_object) < 0) {
                 Py_XDECREF(c_api_object);
                 Py_DECREF(module);
@@ -242,7 +247,7 @@ namespace mdl {
         PyModuleDef_HEAD_INIT,
         "mdl.cext", // m_name
         module_doc, // m_doc
-        sizeof(void*) * static_cast<int>(CextAPI::API_NUM), // m_size
+        0, // m_size
         cext_methods, // m_methods
         cext_slots, // m_slots
         nullptr, // m_traverse
