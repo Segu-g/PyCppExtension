@@ -30,3 +30,13 @@
 *.exe
 *.out
 *.app
+
+# venv
+venv/
+mdl/*__pycache__*
+
+
+# build
+build/
+*.egg-info/
+dist/

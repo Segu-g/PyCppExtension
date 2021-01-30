@@ -129,7 +129,7 @@ namespace mdl {
     int init_MyInt_Object(PyObject* self, PyObject* args, PyObject* keywds){
         int value;
         const char *format = "i";
-        static char *keywdlist[] = {"value", nullptr};
+        static char* keywdlist[] = {"value", nullptr};
         if (PyArg_ParseTupleAndKeywords(args, keywds, format, keywdlist, &value) == 0){
             return -1;
         }
@@ -161,13 +161,13 @@ namespace mdl {
     PyObject* MyInt_add(PyObject *self, PyObject *obj){
         try{
             if(PyObject_IsInstance(obj, (PyObject*)&MyInt_Type) == 0){
-                throw ExtException(PyExc_TypeError,
+                throw utils::ExtException(PyExc_TypeError,
                     std::string("Invalid codec of the given string to be converted."));
             }
             reinterpret_cast<MyInt_Object*>(self)->value += ((MyInt_Object*)obj )->value;
             Py_INCREF(Py_None);
             return Py_None;
-        } catch (ExtException exception){
+        } catch (utils::ExtException& exception){
             exception.set_err();
             return nullptr;
         }
@@ -193,15 +193,17 @@ namespace mdl {
             }
             PyModule_AddObject(module, "MyInt", reinterpret_cast<PyObject *>(&MyInt_Type));
 
-            void* PyCextAPI[static_cast<int>(CextAPI::API_NUM)];
+            void** PyCextAPI = static_cast<void**>(PyModule_GetState(module));
 
-            PyCextAPI[static_cast<int>(CextAPI::MyInt_add)] = static_cast<void*>(MyInt_add);
-            PyCextAPI[static_cast<int>(CextAPI::MyInt_int)] = static_cast<void*>(MyInt_int);
-            PyCextAPI[static_cast<int>(CextAPI::MyInt_getstate)] = static_cast<void*>(MyInt_getstate);
-            PyCextAPI[static_cast<int>(CextAPI::MyInt_setstate)] = static_cast<void*>(MyInt_setstate);
-            PyCextAPI[static_cast<int>(CextAPI::new_MyInt_Object)] = static_cast<void*>(new_MyInt_Object);
-            PyCextAPI[static_cast<int>(CextAPI::init_MyInt_Object)] = static_cast<void*>(init_MyInt_Object);
-            PyCextAPI[static_cast<int>(CextAPI::MyInt_dealloc)] = static_cast<void*>(MyInt_dealloc);
+            PyCextAPI[static_cast<int>(CextAPI::MyInt_add)] = reinterpret_cast<void*>(MyInt_add);
+            PyCextAPI[static_cast<int>(CextAPI::MyInt_int)] = reinterpret_cast<void*>(MyInt_int);
+            PyCextAPI[static_cast<int>(CextAPI::MyInt_getstate)] = reinterpret_cast<void*>(MyInt_getstate);
+            PyCextAPI[static_cast<int>(CextAPI::MyInt_setstate)] = reinterpret_cast<void*>(MyInt_setstate);
+            PyCextAPI[static_cast<int>(CextAPI::new_MyInt_Object)] = reinterpret_cast<void*>(new_MyInt_Object);
+            PyCextAPI[static_cast<int>(CextAPI::init_MyInt_Object)] = reinterpret_cast<void*>(init_MyInt_Object);
+            PyCextAPI[static_cast<int>(CextAPI::MyInt_dealloc)] = reinterpret_cast<void*>(MyInt_dealloc);
+            PyCextAPI[static_cast<int>(CextAPI::cext_refcnt)] = reinterpret_cast<void*>(cext_refcnt);
+
 
             PyObject *c_api_object = PyCapsule_New(reinterpret_cast<void*>(PyCextAPI), "mdl.cext._C_API", nullptr);
             if (PyModule_AddObject(module, "_C_API", c_api_object) < 0) {
@@ -209,7 +211,7 @@ namespace mdl {
                 Py_DECREF(module);
                 throw std::runtime_error("Faild to generate cext._C_API.");
             }
-            ret_val = -1;
+            ret_val = 0;
         }
         catch(const std::runtime_error& err) {
             PyErr_SetImportError(Py_BuildValue("s", err.what()),
@@ -220,7 +222,7 @@ namespace mdl {
     }
 
     PyModuleDef_Slot cext_slots[] = {
-        {Py_mod_exec, cext_exec},
+        {Py_mod_exec, reinterpret_cast<void*>(cext_exec)},
         {0, nullptr},
     };
 
@@ -240,7 +242,7 @@ namespace mdl {
         PyModuleDef_HEAD_INIT,
         "mdl.cext", // m_name
         module_doc, // m_doc
-        0, // m_size
+        sizeof(void*) * static_cast<int>(CextAPI::API_NUM), // m_size
         cext_methods, // m_methods
         cext_slots, // m_slots
         nullptr, // m_traverse
