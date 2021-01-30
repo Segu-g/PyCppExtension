@@ -37,14 +37,14 @@ namespace mdl{
     };
 
     using API_TYPES = std::tuple<
-        PyObject*(*)(PyObject*, PyObject*),
-        PyObject*(*)(PyObject*),
-        PyObject*(*)(PyObject*, PyObject*),
-        PyObject*(*)(PyObject*, PyObject*),
-        PyObject*(*)(PyObject*, PyObject*, PyObject*),
-        int(*)(PyObject*, PyObject*, PyObject*),
-        void(*)(PyObject*),
-        PyObject*(*)(PyObject*, PyObject*)
+        decltype(&MyInt_add),
+        decltype(&MyInt_int),
+        decltype(&MyInt_getstate),
+        decltype(&MyInt_setstate),
+        decltype(&new_MyInt_Object),
+        decltype(&init_MyInt_Object),
+        decltype(&MyInt_dealloc),
+        decltype(&cext_refcnt)
     >;
 
     using CextCAPIManager = utils::CAPIManager<API_TYPES, API>;
