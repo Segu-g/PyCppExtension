@@ -30,8 +30,10 @@ def setup_mdl() -> None:
     modules: List[Extension] = []
     modules.append(
         Extension("mdl.cext",
-                  sources =["./mdl/cext.cpp", "./extension_utils/error_wrapper.cpp"],
-                  language = "c++"))
+                  sources =["./mdl/cext.cpp",
+                            "./extension_utils/error_wrapper.cpp"],
+                  language = "c++",
+                  extra_compile_args=['-std=c++2a'],))
     setup(name = "mdl",
           version = "0.0.1",
           author = "Segu",
@@ -44,9 +46,11 @@ def setup_anothermdl() -> None:
           version = "0.0.1",
           author = "Segu",
           ext_modules = [Extension("anothermdl",
-                    sources =["./anothermdl/anothermdl.cpp", "./extension_utils/error_wrapper.cpp"],
+                    sources =["./anothermdl/anothermdl.cpp",
+                              "./extension_utils/error_wrapper.cpp"],
                     language = "c++",
-                    include_dirs = ["./mdl"])])
+                    include_dirs = ["./mdl"],
+                    extra_compile_args=['-std=c++2a'])])
 
 
 if __name__ == "__main__":

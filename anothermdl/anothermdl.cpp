@@ -7,8 +7,8 @@
 namespace another{
 
     PyObject* another_refcnt(PyObject* module, PyObject* obj){
-        mdl::CextCapsule* capsule = static_cast<mdl::CextCapsule*>(PyModule_GetState(module));
-        return (capsule->function<mdl::CextAPI::cext_refcnt>())(module, obj);
+        mdl::CextCAPIManager* capsule = static_cast<mdl::CextCAPIManager*>(PyModule_GetState(module));
+        return (capsule->function<mdl::API::cext_refcnt>())(module, obj);
     }
 
 
@@ -23,7 +23,7 @@ namespace another{
         PyModuleDef_HEAD_INIT, // m_base
         "anothermdl", //m_name
         PyDoc_STR("This text is doccumentation of anothermdl."), //m_doc
-        sizeof(mdl::CextCapsule),  // m_size
+        sizeof(mdl::CextCAPIManager),  // m_size
         keywdarg_methods, // m_methods
         nullptr, // m_reload
         nullptr, // m_traverse
@@ -40,12 +40,12 @@ namespace another{
             return nullptr;
         }
         try{
-            mdl::CextCapsule* capsule = static_cast<mdl::CextCapsule*>(PyModule_GetState(module));
+            mdl::CextCAPIManager* capsule = static_cast<mdl::CextCAPIManager*>(PyModule_GetState(module));
             if (capsule == nullptr){
                 PyErr_NoMemory();
                 return nullptr;
             }
-            capsule = new (capsule) mdl::CextCapsule;
+            capsule = new (capsule) mdl::CextCAPIManager("mdl.cext._C_API");
             capsule->import();
         }catch (utils::ExtException& exception){
             exception.set_err();
