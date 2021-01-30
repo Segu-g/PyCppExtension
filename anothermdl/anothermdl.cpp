@@ -4,7 +4,7 @@
 #include "../extension_utils/error_wrapper.hpp"
 #include "cext.hpp"
 
-namespace another{
+namespace anothermdl{
 
     PyObject* another_refcnt(PyObject* module, PyObject* obj){
         mdl::CextCAPIManager* capsule = static_cast<mdl::CextCAPIManager*>(PyModule_GetState(module));
@@ -12,7 +12,7 @@ namespace another{
     }
 
 
-    PyMethodDef keywdarg_methods[] = {
+    PyMethodDef anothermdl_methods[] = {
         {"refcnt", reinterpret_cast<PyCFunction>(another_refcnt), METH_O,
          PyDoc_STR("This function uses the C API of the cext module")},
         {NULL, NULL, 0, NULL}
@@ -24,7 +24,7 @@ namespace another{
         "anothermdl", //m_name
         PyDoc_STR("This text is doccumentation of anothermdl."), //m_doc
         sizeof(mdl::CextCAPIManager),  // m_size
-        keywdarg_methods, // m_methods
+        anothermdl_methods, // m_methods
         nullptr, // m_reload
         nullptr, // m_traverse
         nullptr, // m_clear
