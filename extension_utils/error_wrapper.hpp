@@ -3,7 +3,7 @@
 #include <exception>
 #include <string>
 
-namespace mdl {
+namespace utils {
     class ExtException: public std::exception {
     public:
         ExtException();

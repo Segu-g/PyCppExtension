@@ -1,14 +1,11 @@
 #pragma once
-#pragma warning( disable : 4290 )
-
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-#include "extension_utils\error_wrapper.hpp"
+#include "../extension_utils/error_wrapper.hpp"
 #include <stdexcept>
-#include <typeinfo>
-#include <array>
+#include <tuple>
 #include <string>
 
 namespace mdl{
@@ -33,80 +30,83 @@ namespace mdl{
         new_MyInt_Object,
         init_MyInt_Object,
         MyInt_dealloc,
+        cext_refcnt,
         API_NUM
     };
 
     using CextAPI_TYPES = std::tuple<
-        decltype(MyInt_add),
-        decltype(MyInt_int),
-        decltype(MyInt_getstate),
-        decltype(MyInt_setstate),
-        decltype(new_MyInt_Object),
-        decltype(init_MyInt_Object),
-        decltype(MyInt_dealloc)
+        PyObject*(*)(PyObject*, PyObject*),
+        PyObject*(*)(PyObject*),
+        PyObject*(*)(PyObject*, PyObject*),
+        PyObject*(*)(PyObject*, PyObject*),
+        PyObject*(*)(PyObject*, PyObject*, PyObject*),
+        int(*)(PyObject*, PyObject*, PyObject*),
+        void(*)(PyObject*),
+        PyObject*(*)(PyObject*, PyObject*)
     >;
 
     class CextCapsule{
     public:
         std::string capsule_name = "mdl.cext._C_API";
-        CextCapsule() throw(ExtException);
+        CextCapsule(std::string name = "mdl.cext._C_API"){
+            this->capsule_name = name;
+        }
         ~CextCapsule(){
             Py_XDECREF(capsule);
         }
 
         template <CextAPI api>
-        auto function() throw(ExtException){
+        auto function(){
             return reinterpret_cast<
-                std::tuple_element_t<static_cast<int>(api), CextAPI_TYPES>>>(
-                    this->c_apis[static_cast<int>(api)]);
+            std::tuple_element_t<static_cast<int>(api), CextAPI_TYPES>>(
+                this->c_apis[static_cast<int>(api)]);
         }
+
+        void import(){
+            PyObject *object = nullptr;
+            std::string trace = "";
+            size_t dot_pos = 0;
+            size_t last_pos = 0;
+
+            while (dot_pos != std::string::npos) {
+                dot_pos = this->capsule_name.find_first_of(".", last_pos);
+                trace = this->capsule_name.substr(last_pos, dot_pos - last_pos);
+
+                if (object == nullptr) {
+                    object = PyImport_ImportModule(trace.c_str());
+                    if (!object) {
+                        throw utils::ExtException(PyExc_ImportError,
+                            "CextCapsule() could not import module \""
+                            + this->capsule_name.substr(0, last_pos)
+                            + "\"");
+                    }
+                } else {
+                    PyObject *object2 = PyObject_GetAttrString(object, trace.c_str());
+                    Py_DECREF(object);
+                    object = object2;
+                    if (object == nullptr) {
+                        throw utils::ExtException(PyExc_ImportError,
+                            "CextCapsule() could not get attribute \""
+                            + this->capsule_name.substr(0, last_pos)
+                            + "\"");
+                    }
+                }
+                last_pos = dot_pos + 1;
+            }
+
+            /* compare attribute name to module.name by hand */
+            if (PyCapsule_IsValid(object, this->capsule_name.c_str())) {
+                this->capsule = object;
+                this->c_apis = reinterpret_cast<void**>(PyCapsule_GetPointer(this->capsule, this->capsule_name.c_str()));
+            } else {
+                throw utils::ExtException(PyExc_AttributeError,
+                                   "PyCapsule_Import \"" + this->capsule_name +"\" is not valid");
+            }
+        }
+
 
     private:
         PyObject* capsule;
         void **c_apis = nullptr;
     };
-
-    CextCapsule::CextCapsule(){
-        PyObject *object = nullptr;
-        std::string trace = "";
-        size_t dot_pos = dot_pos = this->capsule_name.find_first_of(".", 0);
-        size_t last_pos = 0;
-
-        while (dot_pos != std::string::npos) {
-            trace = this->capsule_name.substr(last_pos, dot_pos - last_pos);
-
-            if (object == nullptr) {
-                object = PyImport_ImportModule(trace.c_str());
-                if (!object) {
-                    throw ExtException(PyExc_ImportError,
-                        "CextCapsule() could not import module \""
-                        + this->capsule_name.substr(0, last_pos)
-                        + "\"");
-                }
-            } else {
-                PyObject *object2 = PyObject_GetAttrString(object, trace.c_str());
-                Py_DECREF(object);
-                object = object2;
-                if (object == nullptr) {
-                    throw ExtException(PyExc_ImportError,
-                        "CextCapsule() could not get attribute \""
-                        + this->capsule_name.substr(0, last_pos)
-                        + "\"");
-                }
-            }
-            last_pos = dot_pos + 1;
-            dot_pos = this->capsule_name.find_first_of(".", last_pos);
-        }
-
-        /* compare attribute name to module.name by hand */
-        if (PyCapsule_IsValid(object, this->capsule_name.c_str())) {
-            this->capsule = object;
-            this->c_apis = reinterpret_cast<void**>(this->capsule);
-        } else {
-            throw ExtException(PyExc_AttributeError,
-                               "PyCapsule_Import \"" + this->capsule_name +"\" is not valid");
-        }
-    }
-
-
 }

@@ -1,6 +1,6 @@
 #include "error_wrapper.hpp"
 
-namespace mdl {
+namespace utils {
     ExtException::ExtException(){
         this->exception = PyExc_RuntimeError;
         Py_INCREF(Py_None);
