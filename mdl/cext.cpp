@@ -2,13 +2,6 @@
 
 namespace mdl {
 
-    using MyInt_Object = struct {
-        PyObject_HEAD
-        int value;
-        PyObject* dict;
-    };
-
-
     PyMethodDef MyInt_methods[] = {
         {"add", (PyCFunction)MyInt_add, METH_O,
             PyDoc_STR("add(self, int) -> void")},
@@ -118,7 +111,7 @@ namespace mdl {
             PyErr_NoMemory();
             return nullptr;
         }
-        self->dict = PyDict_New();
+        self->dict = PyDict_Copy(subtype->tp_dict);
         if (self->dict == nullptr){
             PyErr_SetString(PyExc_RuntimeError, "Faild to get a PyDictObject of MyInt_Object.");
             return nullptr;
@@ -173,6 +166,7 @@ namespace mdl {
         }
 
     }
+
 
     PyObject* MyInt_int(PyObject *self){
         return Py_BuildValue("i", reinterpret_cast<MyInt_Object*>(self)->value);
