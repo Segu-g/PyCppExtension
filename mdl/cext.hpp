@@ -12,6 +12,12 @@
 
 namespace mdl{
 
+    struct MyInt_Object {
+        PyObject_HEAD
+        int value;
+        PyObject* dict;
+    };
+
     // Exported APIS
     PyObject* MyInt_add(PyObject *self, PyObject *obj);
     PyObject* MyInt_int(PyObject *self);
@@ -22,6 +28,7 @@ namespace mdl{
     void MyInt_dealloc(PyObject* self);
 
     PyObject* cext_refcnt(PyObject* module, PyObject* obj);
+
 
 
     enum class API: int{
